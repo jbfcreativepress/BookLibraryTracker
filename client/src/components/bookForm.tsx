@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader, Search, BookOpen } from "lucide-react";
+import { Loader, Search, BookOpen, ImageIcon } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -131,8 +131,8 @@ export function TextBookForm({ onSuccess }: TextFormProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-lg font-semibold">
-            <span className="material-icons mr-2 text-primary">title</span>
-            Add by Title
+            <BookOpen className="h-5 w-5 mr-2 text-primary" />
+            Add Book by Title
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -485,8 +485,8 @@ export function ImageBookForm({ onSuccess }: TextFormProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center text-lg font-semibold">
-            <span className="material-icons mr-2 text-primary">image</span>
-            Add by Cover Photo
+            <ImageIcon className="h-5 w-5 mr-2 text-primary" />
+            Add Book by Photo
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -681,7 +681,7 @@ export function ImageBookForm({ onSuccess }: TextFormProps) {
                   </>
                 ) : (
                   <>
-                    <span className="material-icons mr-1 text-sm">photo_library</span>
+                    <ImageIcon className="h-4 w-4 mr-2" />
                     Add to My Books
                   </>
                 )}
