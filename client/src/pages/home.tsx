@@ -59,33 +59,26 @@ export default function Home() {
       <main className="flex-1 container mx-auto px-4 py-8">
         {/* Hero Section */}
         <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-xl p-8 shadow-sm mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-            <div>
-              <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 mb-3">
-                Your Personal Book Tracker
-              </h1>
-              <p className="text-muted-foreground text-lg mb-6">
-                Keep track of the books you've read, discover new titles, and build your personal reading history.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Button onClick={() => setActiveTab("add")} className="bg-primary hover:bg-primary/90">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add a Book
-                </Button>
-                <Button onClick={() => setActiveTab("search")} variant="outline" className="border-primary/30 hover:bg-primary/5">
-                  <Search className="h-4 w-4 mr-2" />
-                  Find a Book
-                </Button>
-                <Button onClick={() => setActiveTab("discover")} variant="outline" className="border-primary/30 hover:bg-primary/5">
-                  <Lightbulb className="h-4 w-4 mr-2" />
-                  Discover New Titles
-                </Button>
-              </div>
-            </div>
-            <div className="flex justify-center">
-              <div className="w-80 h-80 rounded-lg bg-gradient-to-tr from-primary/30 to-primary/5 flex items-center justify-center shadow-md">
-                <BookOpen className="w-32 h-32 text-primary/40" />
-              </div>
+          <div>
+            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 mb-3">
+              Your Personal Book Tracker
+            </h1>
+            <p className="text-muted-foreground text-lg mb-6">
+              Keep track of the books you've read, discover new titles, and build your personal reading history.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Button onClick={() => setActiveTab("add")} className="bg-primary hover:bg-primary/90">
+                <Plus className="h-4 w-4 mr-2" />
+                Add a Book
+              </Button>
+              <Button onClick={() => setActiveTab("search")} variant="outline" className="border-primary/30 hover:bg-primary/5">
+                <Search className="h-4 w-4 mr-2" />
+                Find a Book
+              </Button>
+              <Button onClick={() => setActiveTab("discover")} variant="outline" className="border-primary/30 hover:bg-primary/5">
+                <Lightbulb className="h-4 w-4 mr-2" />
+                Discover New Titles
+              </Button>
             </div>
           </div>
         </div>

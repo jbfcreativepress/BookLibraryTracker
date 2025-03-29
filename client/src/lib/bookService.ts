@@ -142,66 +142,164 @@ export async function getBookRecommendations(): Promise<ExternalBook[]> {
       return await getDefaultRecommendations();
     }
     
-    // Extract authors, genres, and subjects from user's books
-    const authors = userBooks.map(book => book.author).filter(Boolean);
+    // Create a combined approach using all available book data
+    const recommendations = await Promise.all([
+      getAuthorBasedRecommendations(userBooks),
+      getGenreBasedRecommendations(userBooks),
+      getRecentlyReadRecommendations(userBooks)
+    ]);
     
-    // Create search queries based on frequently read authors or content
-    let searchQuery = '';
+    // Combine and flatten results, then remove duplicates
+    const allRecommendations = recommendations.flat();
     
-    if (authors.length > 0) {
-      // Get the most frequently occurring author
-      const authorCounts = authors.reduce((acc, author) => {
-        if (author) {
-          acc[author] = (acc[author] || 0) + 1;
-        }
-        return acc;
-      }, {} as Record<string, number>);
-      
-      const topAuthor = Object.entries(authorCounts)
-        .sort((a, b) => b[1] - a[1])
-        .map(entry => entry[0])[0];
-        
-      if (topAuthor) {
-        searchQuery = `inauthor:${topAuthor}`;
-      }
-    }
-    
-    // If we couldn't determine preferences, use a default query
-    if (!searchQuery && userBooks.length > 0) {
-      // Use the most recent book's title to find similar books
-      const recentBook = userBooks.sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return dateB - dateA;
-      })[0];
-      
-      if (recentBook && recentBook.title) {
-        const titleWords = recentBook.title.split(' ')
-          .filter(word => word.length > 3)  // Only use significant words
-          .slice(0, 2);  // Use at most 2 words from the title
-          
-        if (titleWords.length > 0) {
-          searchQuery = titleWords.join(' ');
-        }
-      }
-    }
-    
-    // If we still don't have a query, fallback to default recommendations
-    if (!searchQuery) {
-      return await getDefaultRecommendations();
-    }
-    
-    // Get recommendations based on the constructed query
-    const result = await searchGoogleBooks(searchQuery);
+    // Remove duplicates based on book id
+    const uniqueRecommendations = Array.from(
+      new Map(allRecommendations.map(book => [book.id, book])).values()
+    );
     
     // Filter out books the user already has
     const userBookTitles = new Set(userBooks.map(book => book.title));
-    const recommendations = result.books.filter(book => !userBookTitles.has(book.title));
+    const filteredRecommendations = uniqueRecommendations.filter(book => !userBookTitles.has(book.title));
     
-    return recommendations.slice(0, 6); // Return up to 6 recommendations
+    if (filteredRecommendations.length === 0) {
+      return await getDefaultRecommendations();
+    }
+    
+    return filteredRecommendations.slice(0, 6); // Return up to 6 recommendations
     
   } catch (error) {
     console.error('Error fetching book recommendations:', error);
+    return await getDefaultRecommendations();
+  }
+}
+
+/**
+ * Get recommendations based on authors the user has read
+ */
+async function getAuthorBasedRecommendations(userBooks: Book[]): Promise<ExternalBook[]> {
+  try {
+    // Extract authors from user's books
+    const authors = userBooks.map(book => book.author).filter(Boolean) as string[];
+    
+    if (authors.length === 0) {
+      return [];
+    }
+    
+    // Get the most frequently occurring author
+    const authorCounts = authors.reduce((acc, author) => {
+      acc[author] = (acc[author] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topAuthors = Object.entries(authorCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(entry => entry[0])
+      .slice(0, 2); // Take top 2 authors
+      
+    if (topAuthors.length === 0) {
+      return [];
+    }
+    
+    // For each top author, get more books by them
+    const authorResults = await Promise.all(
+      topAuthors.map(author => searchGoogleBooks(`inauthor:"${author}"`))
+    );
+    
+    // Combine results
+    const authorBooks = authorResults.flatMap(result => result.books);
+    return authorBooks;
+    
+  } catch (error) {
+    console.error('Error getting author-based recommendations:', error);
+    return [];
+  }
+}
+
+/**
+ * Get recommendations based on genres/subjects from user's reading history
+ */
+async function getGenreBasedRecommendations(userBooks: Book[]): Promise<ExternalBook[]> {
+  try {
+    // Extract info from book titles and descriptions that might indicate genre
+    const titleKeywords = userBooks
+      .flatMap(book => {
+        const words = book.title.split(' ')
+          .filter(word => word.length > 4) // Only longer words
+          .map(word => word.toLowerCase());
+        return words;
+      })
+      .filter(word => !['about', 'after', 'before', 'their', 'there', 'these', 'those', 'where', 'which'].includes(word));
+    
+    // Get most frequent keywords
+    const keywordCounts = titleKeywords.reduce((acc, word) => {
+      acc[word] = (acc[word] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const topKeywords = Object.entries(keywordCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(entry => entry[0])
+      .slice(0, 3); // Take top 3 keywords
+    
+    if (topKeywords.length === 0) {
+      return [];
+    }
+    
+    // Search for books with similar topics/genres
+    const query = topKeywords.join(' ');
+    const result = await searchGoogleBooks(query);
+    
+    return result.books;
+    
+  } catch (error) {
+    console.error('Error getting genre-based recommendations:', error);
+    return [];
+  }
+}
+
+/**
+ * Get recommendations based on recently read books
+ */
+async function getRecentlyReadRecommendations(userBooks: Book[]): Promise<ExternalBook[]> {
+  try {
+    // Sort books by creation date (most recent first)
+    const sortedBooks = [...userBooks].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+    
+    // Take the 2 most recent books
+    const recentBooks = sortedBooks.slice(0, 2);
+    
+    if (recentBooks.length === 0) {
+      return [];
+    }
+    
+    // For each recent book, find similar books
+    const recentResults = await Promise.all(
+      recentBooks.map(book => {
+        // Use title and author for better results
+        const title = book.title || '';
+        const author = book.author || '';
+        
+        // Create a balanced query
+        let query = title;
+        if (author) {
+          // If we have both, search for similar books not by the same author
+          query = `${title} -inauthor:"${author}"`;
+        }
+        
+        return searchGoogleBooks(query);
+      })
+    );
+    
+    // Combine results
+    const similarBooks = recentResults.flatMap(result => result.books);
+    return similarBooks;
+    
+  } catch (error) {
+    console.error('Error getting recommendations from recent books:', error);
     return [];
   }
 }
