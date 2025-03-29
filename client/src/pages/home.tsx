@@ -84,40 +84,14 @@ export default function Home() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="bg-white rounded-xl shadow-sm p-1 mb-8 inline-flex">
-            <TabsList className="bg-transparent p-0 h-auto">
-              <TabsTrigger 
-                value="add" 
-                className="py-3 px-6 font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all rounded-lg"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Book
-              </TabsTrigger>
-              <TabsTrigger 
-                value="search" 
-                className="py-3 px-6 font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all rounded-lg"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                Find Book
-              </TabsTrigger>
-              <TabsTrigger 
-                value="discover"
-                className="py-3 px-6 font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all rounded-lg"
-              >
-                <Lightbulb className="h-4 w-4 mr-2" />
-                Discover
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <TabsContent value="add" className="space-y-0 border-none p-0">
+          <TabsContent value="add" className="space-y-0 border-none p-0 mt-8">
             <div className="grid md:grid-cols-2 gap-6">
               <TextBookForm onSuccess={handleAddSuccess} />
               <ImageBookForm onSuccess={handleAddSuccess} />
             </div>
           </TabsContent>
 
-          <TabsContent value="search" className="space-y-0 border-none p-0">
+          <TabsContent value="search" className="space-y-0 border-none p-0 mt-8">
             <div className="grid md:grid-cols-2 gap-6">
               <TextSearch onBookSelect={handleBookSelect} />
               <ImageSearch 
@@ -127,7 +101,7 @@ export default function Home() {
             </div>
           </TabsContent>
           
-          <TabsContent value="discover" className="space-y-0 border-none p-0">
+          <TabsContent value="discover" className="space-y-0 border-none p-0 mt-8">
             <BookRecommendations />
           </TabsContent>
         </Tabs>
