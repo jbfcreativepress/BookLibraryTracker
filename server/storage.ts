@@ -57,8 +57,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteBook(id: number): Promise<boolean> {
-    const result = await db.delete(books).where(eq(books.id, id));
-    return result.rowCount > 0;
+    // Use execute and check if any rows were affected
+    const result = await db.delete(books).where(eq(books.id, id)).returning({ id: books.id });
+    return result.length > 0;
   }
 
   async searchBooksByText(query: string): Promise<Book[]> {
