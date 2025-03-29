@@ -2,14 +2,17 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllBooks } from "@/lib/bookService";
 import { Book } from "@/types/books";
-import { TextBookForm, ImageBookForm } from "@/components/bookForm";
-import { TextSearch, ImageSearch } from "@/components/bookSearch";
+import { TextBookForm } from "@/components/bookForm";
+import { ImageBookForm } from "@/components/bookForm";
+import { TextSearch } from "@/components/bookSearch";
+import { ImageSearch } from "@/components/bookSearch";
 import { BookDetailModal } from "@/components/bookDetailModal";
+import { BookRecommendations } from "@/components/bookRecommendations";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, BookOpen } from "lucide-react";
+import { Plus, Search, BookOpen, Lightbulb } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("add");
@@ -64,7 +67,7 @@ export default function Home() {
               <p className="text-muted-foreground text-lg mb-6">
                 Keep track of the books you've read, discover new titles, and build your personal reading history.
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <Button onClick={() => setActiveTab("add")} className="bg-primary hover:bg-primary/90">
                   <Plus className="h-4 w-4 mr-2" />
                   Add a Book
@@ -73,19 +76,15 @@ export default function Home() {
                   <Search className="h-4 w-4 mr-2" />
                   Find a Book
                 </Button>
+                <Button onClick={() => setActiveTab("discover")} variant="outline" className="border-primary/30 hover:bg-primary/5">
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  Discover New Titles
+                </Button>
               </div>
             </div>
             <div className="flex justify-center">
-              <div className="relative">
-                <div className="w-64 h-64 rounded-lg bg-gradient-to-tr from-primary/30 to-primary/10 flex items-center justify-center transform rotate-3 shadow-md">
-                  <BookOpen className="w-24 h-24 text-primary/50" />
-                </div>
-                <div className="absolute top-6 -left-6 w-52 h-52 rounded-lg bg-white/90 border shadow-sm backdrop-blur-sm transform -rotate-6 flex items-center justify-center">
-                  <div className="text-center p-4">
-                    <p className="text-xl font-bold text-primary">Track Your Books</p>
-                    <p className="text-sm text-muted-foreground mt-2">Save your reading history with details and ratings</p>
-                  </div>
-                </div>
+              <div className="w-80 h-80 rounded-lg bg-gradient-to-tr from-primary/30 to-primary/5 flex items-center justify-center shadow-md">
+                <BookOpen className="w-32 h-32 text-primary/40" />
               </div>
             </div>
           </div>
@@ -108,6 +107,13 @@ export default function Home() {
                 <Search className="h-4 w-4 mr-2" />
                 Find Book
               </TabsTrigger>
+              <TabsTrigger 
+                value="discover"
+                className="py-3 px-6 font-medium data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=inactive]:text-muted-foreground transition-all rounded-lg"
+              >
+                <Lightbulb className="h-4 w-4 mr-2" />
+                Discover
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -126,6 +132,10 @@ export default function Home() {
                 onAddBookFromSearch={handleAddFromSearch}
               />
             </div>
+          </TabsContent>
+          
+          <TabsContent value="discover" className="space-y-0 border-none p-0">
+            <BookRecommendations />
           </TabsContent>
         </Tabs>
       </main>

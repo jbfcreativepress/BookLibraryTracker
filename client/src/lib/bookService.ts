@@ -126,3 +126,107 @@ export async function getBookByIsbn(isbn: string): Promise<ExternalBook | null> 
     return null;
   }
 }
+
+/**
+ * Get book recommendations based on user's reading history
+ * This analyzes the user's books and returns recommended titles
+ * @returns Array of recommended books
+ */
+export async function getBookRecommendations(): Promise<ExternalBook[]> {
+  try {
+    // Get all the user's books to analyze their reading preferences
+    const userBooks = await getAllBooks();
+    
+    if (!userBooks || userBooks.length === 0) {
+      // If user has no books, return popular books in various genres
+      return await getDefaultRecommendations();
+    }
+    
+    // Extract authors, genres, and subjects from user's books
+    const authors = userBooks.map(book => book.author).filter(Boolean);
+    
+    // Create search queries based on frequently read authors or content
+    let searchQuery = '';
+    
+    if (authors.length > 0) {
+      // Get the most frequently occurring author
+      const authorCounts = authors.reduce((acc, author) => {
+        if (author) {
+          acc[author] = (acc[author] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
+      
+      const topAuthor = Object.entries(authorCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(entry => entry[0])[0];
+        
+      if (topAuthor) {
+        searchQuery = `inauthor:${topAuthor}`;
+      }
+    }
+    
+    // If we couldn't determine preferences, use a default query
+    if (!searchQuery && userBooks.length > 0) {
+      // Use the most recent book's title to find similar books
+      const recentBook = userBooks.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      })[0];
+      
+      if (recentBook && recentBook.title) {
+        const titleWords = recentBook.title.split(' ')
+          .filter(word => word.length > 3)  // Only use significant words
+          .slice(0, 2);  // Use at most 2 words from the title
+          
+        if (titleWords.length > 0) {
+          searchQuery = titleWords.join(' ');
+        }
+      }
+    }
+    
+    // If we still don't have a query, fallback to default recommendations
+    if (!searchQuery) {
+      return await getDefaultRecommendations();
+    }
+    
+    // Get recommendations based on the constructed query
+    const result = await searchGoogleBooks(searchQuery);
+    
+    // Filter out books the user already has
+    const userBookTitles = new Set(userBooks.map(book => book.title));
+    const recommendations = result.books.filter(book => !userBookTitles.has(book.title));
+    
+    return recommendations.slice(0, 6); // Return up to 6 recommendations
+    
+  } catch (error) {
+    console.error('Error fetching book recommendations:', error);
+    return [];
+  }
+}
+
+/**
+ * Get default book recommendations (popular or classic books)
+ * Used when user has no reading history
+ */
+async function getDefaultRecommendations(): Promise<ExternalBook[]> {
+  // Popular books across different genres
+  const popularQueries = [
+    'best sellers fiction',
+    'award winning books',
+    'classic literature'
+  ];
+  
+  // Randomly select one query to get varied recommendations
+  const randomIndex = Math.floor(Math.random() * popularQueries.length);
+  const query = popularQueries[randomIndex];
+  
+  try {
+    const result = await searchGoogleBooks(query);
+    return result.books.slice(0, 6); // Return up to 6 recommendations
+  } catch (error) {
+    console.error('Error fetching default recommendations:', error);
+    return [];
+  }
+}
