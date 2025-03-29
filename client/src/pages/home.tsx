@@ -58,45 +58,14 @@ export default function Home() {
       {/* Main content */}
       <main className="flex-1 container mx-auto px-3 xs:px-4 py-4 md:py-8">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-lg md:rounded-xl p-3 md:p-8 shadow-sm mb-4 md:mb-12">
+        <div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent rounded-lg md:rounded-xl p-3 md:p-8 shadow-sm mb-4 md:mb-8">
           <div>
             <h1 className="text-xl xs:text-2xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 mb-1 md:mb-3">
               Your Personal Book Tracker
             </h1>
-            <p className="text-sm xs:text-base md:text-lg text-muted-foreground mb-3 md:mb-6 max-w-3xl">
+            <p className="text-sm xs:text-base md:text-lg text-muted-foreground max-w-3xl">
               Keep track of the books you've read, discover new titles, and build your personal reading history.
             </p>
-            <div className="flex flex-wrap gap-2 md:gap-4">
-              <Button 
-                onClick={() => setActiveTab("add")} 
-                className="bg-primary hover:bg-primary/90 text-xs xs:text-sm md:text-base h-8 md:h-10"
-                size="sm"
-              >
-                <Plus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                <span className="hidden xxs:inline">Add Book</span>
-                <span className="xxs:hidden">Add</span>
-              </Button>
-              <Button 
-                onClick={() => setActiveTab("search")} 
-                variant="outline" 
-                className="border-primary/30 hover:bg-primary/5 text-xs xs:text-sm md:text-base h-8 md:h-10"
-                size="sm"
-              >
-                <Search className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                <span className="hidden xxs:inline">Find Book</span>
-                <span className="xxs:hidden">Find</span>
-              </Button>
-              <Button 
-                onClick={() => setActiveTab("discover")} 
-                variant="outline" 
-                className="border-primary/30 hover:bg-primary/5 text-xs xs:text-sm md:text-base h-8 md:h-10"
-                size="sm"
-              >
-                <Lightbulb className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-                <span className="hidden xxs:inline">Discover</span>
-                <span className="xxs:hidden">New</span>
-              </Button>
-            </div>
           </div>
         </div>
 
