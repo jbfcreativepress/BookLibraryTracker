@@ -122,30 +122,39 @@ export function BookList() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">My Book Collection</h2>
-        <div className="flex gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search books..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-6 rounded-lg shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+              My Book Collection
+            </h2>
+            <p className="text-muted-foreground mt-1">
+              Track and manage all the books you've read
+            </p>
           </div>
-          {searchQuery && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setSearchQuery("")}
-              title="Clear search"
-            >
-              <FilterX className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search books..."
+                className="pl-8 w-full md:w-auto min-w-[240px] border-primary/20 focus:border-primary"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {searchQuery && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setSearchQuery("")}
+                title="Clear search"
+              >
+                <FilterX className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -182,13 +191,13 @@ export function BookList() {
       )}
 
       {filteredBooks.length > 0 && (
-        <Card>
+        <Card className="shadow-md border-0">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-primary/5">
                   <TableRow>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-12 rounded-tl-md"></TableHead>
                     <TableHead 
                       className="cursor-pointer"
                       onClick={() => handleSort("title")}

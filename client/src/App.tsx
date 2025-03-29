@@ -13,17 +13,24 @@ function Navigation() {
   const [location, navigate] = useLocation();
 
   return (
-    <nav className="bg-background border-b mb-6">
+    <nav className="bg-gradient-to-r from-primary/90 to-primary mb-6 shadow-md">
       <div className="container mx-auto px-4">
-        <div className="flex h-14 items-center justify-between">
+        <div className="flex h-16 items-center justify-between">
           <div className="flex items-center space-x-4">
-            <span className="text-xl font-bold text-primary">BookTracker</span>
+            <span 
+              className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-white/80"
+              onClick={() => navigate("/")}
+              style={{ cursor: 'pointer' }}
+            >
+              <BookOpen className="h-6 w-6 inline-block mr-2 text-white" />
+              BookTracker
+            </span>
           </div>
-          <div className="flex space-x-4">
+          <div className="flex space-x-2">
             <Button
               variant={location === "/" ? "secondary" : "ghost"}
               onClick={() => navigate("/")}
-              className="flex items-center"
+              className="flex items-center text-white hover:text-primary hover:bg-white"
             >
               <HomeIcon className="h-4 w-4 mr-1" />
               Home
@@ -31,7 +38,7 @@ function Navigation() {
             <Button
               variant={location === "/books" ? "secondary" : "ghost"}
               onClick={() => navigate("/books")}
-              className="flex items-center"
+              className="flex items-center text-white hover:text-primary hover:bg-white"
             >
               <BookOpen className="h-4 w-4 mr-1" />
               My Books

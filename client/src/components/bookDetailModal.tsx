@@ -83,9 +83,9 @@ export function BookDetailModal({ book, isOpen, onClose, onEdit }: BookDetailMod
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold">Book Details</DialogTitle>
+        <DialogContent className="sm:max-w-md overflow-hidden rounded-lg">
+          <DialogHeader className="bg-gradient-to-r from-primary/20 to-primary/5 px-6 py-4 -mx-6 -mt-6 mb-4">
+            <DialogTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/80">Book Details</DialogTitle>
           </DialogHeader>
           <div className="flex mb-4">
             <div className="flex-shrink-0 mr-4">
