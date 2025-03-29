@@ -55,11 +55,24 @@ export class MemStorage implements IStorage {
   async createBook(insertBook: InsertBook): Promise<Book> {
     const id = this.bookCurrentId++;
     const now = new Date();
-    const book: Book = { 
-      ...insertBook, 
-      id, 
-      createdAt: now 
+    
+    // Convert undefined values to null to satisfy the Book type
+    const book: Book = {
+      id,
+      title: insertBook.title,
+      author: insertBook.author ?? null,
+      yearRead: insertBook.yearRead ?? null,
+      rating: insertBook.rating ?? null,
+      notes: insertBook.notes ?? null,
+      coverUrl: insertBook.coverUrl ?? null,
+      coverData: insertBook.coverData ?? null,
+      isbn: insertBook.isbn ?? null,
+      publisher: insertBook.publisher ?? null,
+      publishedDate: insertBook.publishedDate ?? null,
+      description: insertBook.description ?? null,
+      createdAt: now
     };
+    
     this.books.set(id, book);
     return book;
   }
@@ -68,9 +81,20 @@ export class MemStorage implements IStorage {
     const book = this.books.get(id);
     if (!book) return undefined;
 
+    // Create a new book object with the updated data
     const updatedBook: Book = {
       ...book,
-      ...updateData,
+      title: updateData.title ?? book.title,
+      author: updateData.author ?? book.author,
+      yearRead: updateData.yearRead ?? book.yearRead,
+      rating: updateData.rating ?? book.rating,
+      notes: updateData.notes ?? book.notes,
+      coverUrl: updateData.coverUrl ?? book.coverUrl,
+      coverData: updateData.coverData ?? book.coverData,
+      isbn: updateData.isbn ?? book.isbn,
+      publisher: updateData.publisher ?? book.publisher,
+      publishedDate: updateData.publishedDate ?? book.publishedDate,
+      description: updateData.description ?? book.description,
     };
 
     this.books.set(id, updatedBook);
@@ -90,7 +114,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.books.values()).filter(book => {
       return (
         book.title.toLowerCase().includes(normalizedQuery) ||
-        (book.author && book.author.toLowerCase().includes(normalizedQuery))
+        (book.author && book.author.toLowerCase().includes(normalizedQuery)) ||
+        (book.isbn && book.isbn.toLowerCase().includes(normalizedQuery)) ||
+        (book.publisher && book.publisher.toLowerCase().includes(normalizedQuery)) ||
+        (book.description && book.description.toLowerCase().includes(normalizedQuery))
       );
     });
   }

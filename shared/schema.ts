@@ -17,6 +17,10 @@ export const books = pgTable("books", {
   notes: text("notes"),
   coverUrl: text("cover_url"),
   coverData: text("cover_data"),
+  isbn: text("isbn"),
+  publisher: text("publisher"),
+  publishedDate: text("published_date"),
+  description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -33,6 +37,10 @@ export const insertBookSchema = createInsertSchema(books).pick({
   notes: true,
   coverUrl: true,
   coverData: true,
+  isbn: true,
+  publisher: true,
+  publishedDate: true,
+  description: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

@@ -8,6 +8,10 @@ export interface Book {
   coverUrl?: string;
   coverData?: string;
   createdAt?: Date;
+  isbn?: string;
+  publisher?: string;
+  publishedDate?: string;
+  description?: string;
 }
 
 export interface BookFormValues {
@@ -18,6 +22,10 @@ export interface BookFormValues {
   notes?: string;
   coverUrl?: string;
   coverData?: string;
+  isbn?: string;
+  publisher?: string;
+  publishedDate?: string;
+  description?: string;
 }
 
 export interface OcrResult {
@@ -38,4 +46,49 @@ export interface ImageSearchResult {
     author: string;
     rawText: string;
   };
+}
+
+// Google Books API types
+export interface GoogleBookSearchResult {
+  kind: string;
+  totalItems: number;
+  items: GoogleBookItem[];
+}
+
+export interface GoogleBookItem {
+  id: string;
+  volumeInfo: {
+    title: string;
+    authors?: string[];
+    publisher?: string;
+    publishedDate?: string;
+    description?: string;
+    industryIdentifiers?: Array<{
+      type: string;
+      identifier: string;
+    }>;
+    imageLinks?: {
+      smallThumbnail?: string;
+      thumbnail?: string;
+    };
+    categories?: string[];
+    language?: string;
+    pageCount?: number;
+  };
+}
+
+export interface ExternalBookSearchResult {
+  books: ExternalBook[];
+  totalItems: number;
+}
+
+export interface ExternalBook {
+  id: string;
+  title: string;
+  author: string;
+  coverUrl?: string;
+  isbn?: string;
+  publisher?: string;
+  publishedDate?: string;
+  description?: string;
 }

@@ -267,6 +267,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // External book search with Google Books API
+  app.get("/api/external/books", async (req: Request, res: Response) => {
+    try {
+      const query = req.query.q as string;
+      if (!query) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+
+      // Make request to Google Books API
+      const response = await axios.get(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`
+      );
+
+      res.json(response.data);
+    } catch (error) {
+      console.error("Error fetching from Google Books API:", error);
+      res.status(500).json({ 
+        message: "Error fetching from Google Books API", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
+  // Look up a book by ISBN
+  app.get("/api/external/books/isbn/:isbn", async (req: Request, res: Response) => {
+    try {
+      const isbn = req.params.isbn;
+      if (!isbn) {
+        return res.status(400).json({ message: "ISBN is required" });
+      }
+
+      // Make request to Google Books API with ISBN
+      const response = await axios.get(
+        `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`
+      );
+
+      if (!response.data.items || response.data.items.length === 0) {
+        return res.status(404).json({ message: "Book not found with provided ISBN" });
+      }
+
+      res.json(response.data.items[0]);
+    } catch (error) {
+      console.error("Error looking up book by ISBN:", error);
+      res.status(500).json({ 
+        message: "Error looking up book by ISBN", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
