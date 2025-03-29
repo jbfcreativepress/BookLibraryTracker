@@ -1,4 +1,6 @@
 import { books, type Book, type InsertBook, users, type User, type InsertUser } from "@shared/schema";
+import { db } from "./db";
+import { eq, like, or, desc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -14,95 +16,49 @@ export interface IStorage {
   searchBooksByText(query: string): Promise<Book[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private books: Map<number, Book>;
-  private userCurrentId: number;
-  private bookCurrentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.books = new Map();
-    this.userCurrentId = 1;
-    this.bookCurrentId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getAllBooks(): Promise<Book[]> {
-    return Array.from(this.books.values());
+    return await db.select().from(books).orderBy(desc(books.createdAt));
   }
 
   async getBook(id: number): Promise<Book | undefined> {
-    return this.books.get(id);
+    const [book] = await db.select().from(books).where(eq(books.id, id));
+    return book;
   }
 
   async createBook(insertBook: InsertBook): Promise<Book> {
-    const id = this.bookCurrentId++;
-    const now = new Date();
-    
-    // Convert undefined values to null to satisfy the Book type
-    const book: Book = {
-      id,
-      title: insertBook.title,
-      author: insertBook.author ?? null,
-      yearRead: insertBook.yearRead ?? null,
-      rating: insertBook.rating ?? null,
-      notes: insertBook.notes ?? null,
-      coverUrl: insertBook.coverUrl ?? null,
-      coverData: insertBook.coverData ?? null,
-      isbn: insertBook.isbn ?? null,
-      publisher: insertBook.publisher ?? null,
-      publishedDate: insertBook.publishedDate ?? null,
-      description: insertBook.description ?? null,
-      createdAt: now
-    };
-    
-    this.books.set(id, book);
+    const [book] = await db.insert(books).values(insertBook).returning();
     return book;
   }
 
   async updateBook(id: number, updateData: Partial<InsertBook>): Promise<Book | undefined> {
-    const book = this.books.get(id);
-    if (!book) return undefined;
-
-    // Create a new book object with the updated data
-    const updatedBook: Book = {
-      ...book,
-      title: updateData.title ?? book.title,
-      author: updateData.author ?? book.author,
-      yearRead: updateData.yearRead ?? book.yearRead,
-      rating: updateData.rating ?? book.rating,
-      notes: updateData.notes ?? book.notes,
-      coverUrl: updateData.coverUrl ?? book.coverUrl,
-      coverData: updateData.coverData ?? book.coverData,
-      isbn: updateData.isbn ?? book.isbn,
-      publisher: updateData.publisher ?? book.publisher,
-      publishedDate: updateData.publishedDate ?? book.publishedDate,
-      description: updateData.description ?? book.description,
-    };
-
-    this.books.set(id, updatedBook);
+    const [updatedBook] = await db
+      .update(books)
+      .set(updateData)
+      .where(eq(books.id, id))
+      .returning();
+    
     return updatedBook;
   }
 
   async deleteBook(id: number): Promise<boolean> {
-    return this.books.delete(id);
+    const result = await db.delete(books).where(eq(books.id, id));
+    return result.rowCount > 0;
   }
 
   async searchBooksByText(query: string): Promise<Book[]> {
@@ -110,17 +66,20 @@ export class MemStorage implements IStorage {
       return [];
     }
     
-    const normalizedQuery = query.trim().toLowerCase();
-    return Array.from(this.books.values()).filter(book => {
-      return (
-        book.title.toLowerCase().includes(normalizedQuery) ||
-        (book.author && book.author.toLowerCase().includes(normalizedQuery)) ||
-        (book.isbn && book.isbn.toLowerCase().includes(normalizedQuery)) ||
-        (book.publisher && book.publisher.toLowerCase().includes(normalizedQuery)) ||
-        (book.description && book.description.toLowerCase().includes(normalizedQuery))
+    const normalizedQuery = `%${query.trim().toLowerCase()}%`;
+    return await db
+      .select()
+      .from(books)
+      .where(
+        or(
+          like(books.title, normalizedQuery),
+          like(books.author, normalizedQuery),
+          like(books.isbn, normalizedQuery),
+          like(books.publisher, normalizedQuery),
+          like(books.description, normalizedQuery)
+        )
       );
-    });
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
