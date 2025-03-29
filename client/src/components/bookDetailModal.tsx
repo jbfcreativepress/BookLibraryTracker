@@ -108,11 +108,33 @@ export function BookDetailModal({ book, isOpen, onClose, onEdit }: BookDetailMod
               {book.yearRead && (
                 <p className="text-sm text-muted-foreground mt-1">Read in {book.yearRead}</p>
               )}
+              {book.isbn && (
+                <p className="text-xs text-muted-foreground mt-2">ISBN: {book.isbn}</p>
+              )}
             </div>
           </div>
 
+          {(book.publisher || book.publishedDate) && (
+            <div className="mt-4 text-sm">
+              <h5 className="font-medium text-sm mb-1">Publication Details</h5>
+              <div className="flex flex-wrap gap-x-4 text-muted-foreground">
+                {book.publisher && <p>Publisher: {book.publisher}</p>}
+                {book.publishedDate && <p>Published: {book.publishedDate}</p>}
+              </div>
+            </div>
+          )}
+
+          {book.description && (
+            <div className="mt-4">
+              <h5 className="font-medium text-sm mb-1">Book Description</h5>
+              <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md max-h-24 overflow-y-auto">
+                {book.description}
+              </p>
+            </div>
+          )}
+
           <div className="mt-4">
-            <h5 className="font-medium text-sm mb-2">Your Notes</h5>
+            <h5 className="font-medium text-sm mb-1">Your Notes</h5>
             <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
               {book.notes || "No notes added for this book."}
             </p>
