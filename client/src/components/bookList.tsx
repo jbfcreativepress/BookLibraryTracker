@@ -5,6 +5,7 @@ import { getAllBooks, deleteBook } from "@/lib/bookService";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,7 @@ import { BookDetailModal } from "./bookDetailModal";
 
 export function BookList() {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [sortField, setSortField] = useState<keyof Book>("title");
@@ -191,146 +193,235 @@ export function BookList() {
       )}
 
       {filteredBooks.length > 0 && (
-        <Card className="shadow-md border-0">
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader className="bg-primary/5">
-                  <TableRow>
-                    <TableHead className="w-12 rounded-tl-md"></TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("title")}
-                    >
-                      <div className="flex items-center">
-                        Title
-                        {sortField === "title" && (
-                          sortDirection === "asc" ? 
-                            <SortAsc className="ml-1 h-4 w-4" /> : 
-                            <SortDesc className="ml-1 h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("author")}
-                    >
-                      <div className="flex items-center">
-                        Author
-                        {sortField === "author" && (
-                          sortDirection === "asc" ? 
-                            <SortAsc className="ml-1 h-4 w-4" /> : 
-                            <SortDesc className="ml-1 h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("yearRead")}
-                    >
-                      <div className="flex items-center">
-                        Year Read
-                        {sortField === "yearRead" && (
-                          sortDirection === "asc" ? 
-                            <SortAsc className="ml-1 h-4 w-4" /> : 
-                            <SortDesc className="ml-1 h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("rating")}
-                    >
-                      <div className="flex items-center">
-                        Rating
-                        {sortField === "rating" && (
-                          sortDirection === "asc" ? 
-                            <SortAsc className="ml-1 h-4 w-4" /> : 
-                            <SortDesc className="ml-1 h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer"
-                      onClick={() => handleSort("isbn")}
-                    >
-                      <div className="flex items-center">
-                        ISBN
-                        {sortField === "isbn" && (
-                          sortDirection === "asc" ? 
-                            <SortAsc className="ml-1 h-4 w-4" /> : 
-                            <SortDesc className="ml-1 h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedBooks.map((book) => (
-                    <TableRow key={book.id}>
-                      <TableCell>
-                        {book.coverUrl || book.coverData ? (
-                          <div className="w-10 h-14 overflow-hidden rounded">
-                            <img 
-                              src={book.coverUrl || book.coverData} 
-                              alt={`Cover of ${book.title}`}
-                              className="w-full h-full object-cover"
-                            />
+        <>
+          {/* Desktop View - Table Layout */}
+          {!isMobile && (
+            <Card className="shadow-md border-0 hidden md:block">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-primary/5">
+                      <TableRow>
+                        <TableHead className="w-12 rounded-tl-md"></TableHead>
+                        <TableHead 
+                          className="cursor-pointer"
+                          onClick={() => handleSort("title")}
+                        >
+                          <div className="flex items-center">
+                            Title
+                            {sortField === "title" && (
+                              sortDirection === "asc" ? 
+                                <SortAsc className="ml-1 h-4 w-4" /> : 
+                                <SortDesc className="ml-1 h-4 w-4" />
+                            )}
                           </div>
-                        ) : (
-                          <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
-                            <BookOpen className="h-5 w-5 text-muted-foreground" />
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer"
+                          onClick={() => handleSort("author")}
+                        >
+                          <div className="flex items-center">
+                            Author
+                            {sortField === "author" && (
+                              sortDirection === "asc" ? 
+                                <SortAsc className="ml-1 h-4 w-4" /> : 
+                                <SortDesc className="ml-1 h-4 w-4" />
+                            )}
                           </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer"
+                          onClick={() => handleSort("yearRead")}
+                        >
+                          <div className="flex items-center">
+                            Year Read
+                            {sortField === "yearRead" && (
+                              sortDirection === "asc" ? 
+                                <SortAsc className="ml-1 h-4 w-4" /> : 
+                                <SortDesc className="ml-1 h-4 w-4" />
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer"
+                          onClick={() => handleSort("rating")}
+                        >
+                          <div className="flex items-center">
+                            Rating
+                            {sortField === "rating" && (
+                              sortDirection === "asc" ? 
+                                <SortAsc className="ml-1 h-4 w-4" /> : 
+                                <SortDesc className="ml-1 h-4 w-4" />
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer"
+                          onClick={() => handleSort("isbn")}
+                        >
+                          <div className="flex items-center">
+                            ISBN
+                            {sortField === "isbn" && (
+                              sortDirection === "asc" ? 
+                                <SortAsc className="ml-1 h-4 w-4" /> : 
+                                <SortDesc className="ml-1 h-4 w-4" />
+                            )}
+                          </div>
+                        </TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sortedBooks.map((book) => (
+                        <TableRow key={book.id}>
+                          <TableCell>
+                            {book.coverUrl || book.coverData ? (
+                              <div className="w-10 h-14 overflow-hidden rounded">
+                                <img 
+                                  src={book.coverUrl || book.coverData} 
+                                  alt={`Cover of ${book.title}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-14 bg-muted rounded flex items-center justify-center">
+                                <BookOpen className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">{book.title}</TableCell>
+                          <TableCell>{book.author}</TableCell>
+                          <TableCell>{book.yearRead}</TableCell>
+                          <TableCell>
+                            {book.rating && (
+                              <div className="flex items-center">
+                                {Array.from({ length: 5 }).map((_, index) => (
+                                  <span key={index} className="text-yellow-500">
+                                    {index < book.rating! ? "★" : "☆"}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>{book.isbn}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleViewBook(book)}
+                                title="View Details"
+                              >
+                                <Info className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteBook(book.id)}
+                                title="Delete Book"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-3">
+                <div className="text-xs text-muted-foreground">
+                  Showing {filteredBooks.length} of {books.length} books
+                </div>
+              </CardFooter>
+            </Card>
+          )}
+
+          {/* Mobile View - Card Layout */}
+          {isMobile && (
+            <div className="space-y-4 md:hidden">
+              <div className="flex justify-between items-center mb-3 px-2">
+                <div className="text-sm flex items-center gap-1">
+                  <Button variant="outline" size="sm" onClick={() => handleSort(sortField)} className="h-8">
+                    Sort by: {sortField}
+                    {sortDirection === "asc" ? 
+                      <SortAsc className="ml-1 h-3 w-3" /> : 
+                      <SortDesc className="ml-1 h-3 w-3" />
+                    }
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {filteredBooks.length} of {books.length} books
+                </div>
+              </div>
+
+              {sortedBooks.map((book) => (
+                <Card key={book.id} className="overflow-hidden shadow-sm border border-muted">
+                  <div className="flex">
+                    <div className="w-20 flex-shrink-0">
+                      {book.coverUrl || book.coverData ? (
+                        <img 
+                          src={book.coverUrl || book.coverData} 
+                          alt={`Cover of ${book.title}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-muted flex items-center justify-center min-h-[120px]">
+                          <BookOpen className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 p-3">
+                      <div className="font-medium line-clamp-1">{book.title}</div>
+                      <div className="text-sm text-muted-foreground line-clamp-1">
+                        {book.author && <span>{book.author}</span>}
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-2">
+                        {book.yearRead && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                            {book.yearRead}
+                          </span>
                         )}
-                      </TableCell>
-                      <TableCell className="font-medium">{book.title}</TableCell>
-                      <TableCell>{book.author}</TableCell>
-                      <TableCell>{book.yearRead}</TableCell>
-                      <TableCell>
                         {book.rating && (
                           <div className="flex items-center">
                             {Array.from({ length: 5 }).map((_, index) => (
-                              <span key={index} className="text-yellow-500">
+                              <span key={index} className="text-yellow-500 text-xs">
                                 {index < book.rating! ? "★" : "☆"}
                               </span>
                             ))}
                           </div>
                         )}
-                      </TableCell>
-                      <TableCell>{book.isbn}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleViewBook(book)}
-                            title="View Details"
-                          >
-                            <Info className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteBook(book.id)}
-                            title="Delete Book"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </div>
+
+                      <div className="flex justify-end mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewBook(book)}
+                          className="h-8 px-2 text-xs"
+                        >
+                          <Info className="h-3 w-3 mr-1" />
+                          Details
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteBook(book.id)}
+                          className="h-8 px-2 text-xs text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
-          </CardContent>
-          <CardFooter className="border-t px-6 py-3">
-            <div className="text-xs text-muted-foreground">
-              Showing {filteredBooks.length} of {books.length} books
-            </div>
-          </CardFooter>
-        </Card>
+          )}
+        </>
       )}
 
       <BookDetailModal
