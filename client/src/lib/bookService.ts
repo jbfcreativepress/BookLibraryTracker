@@ -39,38 +39,97 @@ export async function searchBooksByText(query: string): Promise<Book[]> {
   return response.json();
 }
 
-export async function processBookCoverImage(image: File): Promise<OcrResult> {
+/**
+ * Upload file with timeout and retry logic
+ */
+async function uploadFileWithRetry(
+  url: string, 
+  file: File, 
+  fieldName: string = 'cover',
+  maxRetries: number = 2,
+  timeoutMs: number = 60000 // 60 seconds for OCR operations which can be slow
+): Promise<Response> {
   const formData = new FormData();
-  formData.append("cover", image);
+  formData.append(fieldName, file);
   
-  const response = await fetch("/api/books/ocr", {
-    method: "POST",
-    body: formData,
-    credentials: "include"
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Image processing failed: ${response.statusText}`);
+  // Setup abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    let currentRetry = 0;
+    let lastError;
+
+    while (currentRetry <= maxRetries) {
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          signal: controller.signal
+        });
+        
+        if (response.ok) {
+          return response;
+        } else if (response.status >= 500) {
+          // Server errors are retryable
+          const errorText = await response.text().catch(() => response.statusText);
+          throw new Error(`Server error (${response.status}): ${errorText}`);
+        } else {
+          // Client errors are not retryable - throw immediately
+          const errorData = await response.json().catch(() => ({ message: response.statusText }));
+          throw new Error(errorData.message || `Image processing failed: ${response.statusText}`);
+        }
+      } catch (error) {
+        lastError = error;
+        
+        // Only retry on network errors, timeouts, or server errors
+        if (
+          error instanceof TypeError || // Network error
+          (error instanceof DOMException && error.name === 'AbortError') || // Timeout
+          (error instanceof Error && error.message.includes('Server error')) // 5xx errors
+        ) {
+          currentRetry++;
+          if (currentRetry <= maxRetries) {
+            console.log(`Retrying file upload (attempt ${currentRetry} of ${maxRetries})...`);
+            // Wait with exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, currentRetry - 1)));
+            continue;
+          }
+        }
+        
+        // For other errors or if we've exhausted retries, rethrow
+        throw error;
+      }
+    }
+    
+    // If we get here, all retries failed
+    throw lastError || new Error(`File upload failed after ${maxRetries} retries`);
+  } finally {
+    clearTimeout(timeoutId);
   }
-  
-  return response.json();
+}
+
+export async function processBookCoverImage(image: File): Promise<OcrResult> {
+  try {
+    // OCR processing can take longer, so use a 60 second timeout
+    const response = await uploadFileWithRetry("/api/books/ocr", image, "cover", 2, 60000);
+    return await response.json();
+  } catch (error) {
+    console.error("Error processing book cover:", error);
+    throw new Error(`Image processing failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 export async function searchBooksByImage(image: File): Promise<ImageSearchResult> {
-  const formData = new FormData();
-  formData.append("cover", image);
-  
-  const response = await fetch("/api/books/search/image", {
-    method: "POST",
-    body: formData,
-    credentials: "include"
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Image search failed: ${response.statusText}`);
+  try {
+    // Image search can also take time due to OCR processing
+    const response = await uploadFileWithRetry("/api/books/search/image", image, "cover", 2, 60000);
+    return await response.json();
+  } catch (error) {
+    console.error("Error searching by image:", error);
+    throw new Error(`Image search failed: ${error instanceof Error ? error.message : String(error)}`);
   }
-  
-  return response.json();
 }
 
 /**
@@ -79,37 +138,50 @@ export async function searchBooksByImage(image: File): Promise<ImageSearchResult
  * @returns An array of books matching the query
  */
 export async function searchGoogleBooks(query: string): Promise<ExternalBookSearchResult> {
-  // Make a request to our backend which will proxy the call to Google Books API
-  const response = await apiRequest("GET", `/api/external/books?q=${encodeURIComponent(query)}`);
-  const data = await response.json();
-  
-  // Convert the Google Books API response to our ExternalBook format
-  if (!data.items || data.items.length === 0) {
-    return { books: [], totalItems: 0 };
-  }
-  
-  const books: ExternalBook[] = data.items.map((item: any) => {
-    const volumeInfo = item.volumeInfo;
-    const isbn = volumeInfo.industryIdentifiers?.find(
-      (id: any) => id.type === 'ISBN_13' || id.type === 'ISBN_10'
-    )?.identifier;
+  try {
+    // Make a request to our backend which will proxy the call to Google Books API
+    const response = await apiRequest("GET", `/api/external/books?q=${encodeURIComponent(query)}`);
+    
+    // If we don't get a successful response, throw an error
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || `Failed to search books: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Convert the Google Books API response to our ExternalBook format
+    if (!data.items || data.items.length === 0) {
+      return { books: [], totalItems: 0 };
+    }
+    
+    const books: ExternalBook[] = data.items.map((item: any) => {
+      const volumeInfo = item.volumeInfo;
+      const isbn = volumeInfo.industryIdentifiers?.find(
+        (id: any) => id.type === 'ISBN_13' || id.type === 'ISBN_10'
+      )?.identifier;
+      
+      return {
+        id: item.id,
+        title: volumeInfo.title || 'Unknown Title',
+        author: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author',
+        coverUrl: volumeInfo.imageLinks?.thumbnail || '',
+        isbn: isbn || '',
+        publisher: volumeInfo.publisher || '',
+        publishedDate: volumeInfo.publishedDate || '',
+        description: volumeInfo.description || ''
+      };
+    });
     
     return {
-      id: item.id,
-      title: volumeInfo.title || 'Unknown Title',
-      author: volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author',
-      coverUrl: volumeInfo.imageLinks?.thumbnail || '',
-      isbn: isbn || '',
-      publisher: volumeInfo.publisher || '',
-      publishedDate: volumeInfo.publishedDate || '',
-      description: volumeInfo.description || ''
+      books,
+      totalItems: data.totalItems || books.length
     };
-  });
-  
-  return {
-    books,
-    totalItems: data.totalItems || books.length
-  };
+  } catch (error) {
+    console.error('Error searching Google Books:', error);
+    // Return empty result rather than crashing the application
+    return { books: [], totalItems: 0 };
+  }
 }
 
 /**

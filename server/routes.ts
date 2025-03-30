@@ -175,22 +175,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let bookInfo = { title, author };
       
       if (title) {
-        try {
-          const googleBooksResponse = await axios.get(
-            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}`
-          );
-          
-          if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
-            const bookData = googleBooksResponse.data.items[0].volumeInfo;
+        // Setup retry logic for Google Books API
+        const maxRetries = 2;
+        let currentRetry = 0;
+        
+        while (currentRetry <= maxRetries) {
+          try {
+            const googleBooksResponse = await axios.get(
+              `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}`,
+              { 
+                timeout: 10000, // 10 second timeout
+                headers: {
+                  'Accept': 'application/json'
+                }
+              }
+            );
             
-            bookInfo = {
-              title: bookData.title || title,
-              author: bookData.authors ? bookData.authors[0] : author,
-            };
+            if (googleBooksResponse.data.items && googleBooksResponse.data.items.length > 0) {
+              const bookData = googleBooksResponse.data.items[0].volumeInfo;
+              
+              bookInfo = {
+                title: bookData.title || title,
+                author: bookData.authors ? bookData.authors[0] : author,
+              };
+            }
+            
+            // If successful, break out of the retry loop
+            break;
+          } catch (googleApiError) {
+            console.error(`Error fetching from Google Books API (attempt ${currentRetry + 1}):`, googleApiError);
+            
+            // Only retry on network errors or timeouts
+            if (axios.isAxiosError(googleApiError) && 
+                (!googleApiError.response || googleApiError.code === 'ECONNABORTED')) {
+              currentRetry++;
+              if (currentRetry <= maxRetries) {
+                // Wait 1 second before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                continue;
+              }
+            }
+            
+            // For all other errors or if we're out of retries, break and use OCR data
+            break;
           }
-        } catch (googleApiError) {
-          console.error("Error fetching from Google Books API:", googleApiError);
-          // Continue with OCR data if Google Books fails
         }
       }
       
@@ -275,14 +303,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Search query is required" });
       }
 
-      // Make request to Google Books API
-      const response = await axios.get(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`
-      );
+      // Make request to Google Books API with a timeout and retries
+      const maxRetries = 2;
+      let currentRetry = 0;
+      let lastError;
 
-      res.json(response.data);
+      while (currentRetry <= maxRetries) {
+        try {
+          const response = await axios.get(
+            `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`,
+            { 
+              timeout: 10000, // 10 second timeout
+              headers: {
+                'Accept': 'application/json'
+              }
+            }
+          );
+          
+          return res.json(response.data);
+        } catch (error) {
+          lastError = error;
+          console.error(`Error fetching from Google Books API (attempt ${currentRetry + 1}):`, error);
+          // Only retry on network errors or timeouts, not on 4xx errors
+          if (axios.isAxiosError(error) && (!error.response || error.code === 'ECONNABORTED')) {
+            currentRetry++;
+            if (currentRetry <= maxRetries) {
+              // Wait 1 second before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              continue;
+            }
+          } else {
+            // Don't retry on other types of errors
+            break;
+          }
+        }
+      }
+
+      // If we got here, all retries failed
+      console.error("All attempts to fetch from Google Books API failed");
+      res.status(503).json({ 
+        message: "Unable to reach Google Books API after multiple attempts", 
+        error: lastError ? (lastError as Error).message : "Unknown error"
+      });
     } catch (error) {
-      console.error("Error fetching from Google Books API:", error);
+      console.error("Error in external books endpoint:", error);
       res.status(500).json({ 
         message: "Error fetching from Google Books API", 
         error: (error as Error).message 
@@ -298,18 +362,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ISBN is required" });
       }
 
-      // Make request to Google Books API with ISBN
-      const response = await axios.get(
-        `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`
-      );
+      // Make request to Google Books API with ISBN with timeout and retries
+      const maxRetries = 2;
+      let currentRetry = 0;
+      let lastError;
 
-      if (!response.data.items || response.data.items.length === 0) {
-        return res.status(404).json({ message: "Book not found with provided ISBN" });
+      while (currentRetry <= maxRetries) {
+        try {
+          const response = await axios.get(
+            `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`,
+            { 
+              timeout: 10000, // 10 second timeout
+              headers: {
+                'Accept': 'application/json'
+              }
+            }
+          );
+
+          if (!response.data.items || response.data.items.length === 0) {
+            return res.status(404).json({ message: "Book not found with provided ISBN" });
+          }
+
+          return res.json(response.data.items[0]);
+        } catch (error) {
+          lastError = error;
+          console.error(`Error looking up book by ISBN (attempt ${currentRetry + 1}):`, error);
+          // Only retry on network errors or timeouts, not on 4xx errors
+          if (axios.isAxiosError(error) && (!error.response || error.code === 'ECONNABORTED')) {
+            currentRetry++;
+            if (currentRetry <= maxRetries) {
+              // Wait 1 second before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              continue;
+            }
+          } else {
+            // Don't retry on other types of errors
+            break;
+          }
+        }
       }
 
-      res.json(response.data.items[0]);
+      // If we got here, all retries failed
+      console.error("All attempts to fetch book by ISBN failed");
+      res.status(503).json({ 
+        message: "Unable to reach Google Books API after multiple attempts", 
+        error: lastError ? (lastError as Error).message : "Unknown error"
+      });
     } catch (error) {
-      console.error("Error looking up book by ISBN:", error);
+      console.error("Error in ISBN lookup endpoint:", error);
       res.status(500).json({ 
         message: "Error looking up book by ISBN", 
         error: (error as Error).message 
